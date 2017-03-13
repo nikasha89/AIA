@@ -1,0 +1,33 @@
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+Definir una función codifica_descodifica(fichero1,fichero2) que codifique un
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+Indicación: La función chr(n) obtiene el carácter cuyo código
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+es el número "n". A la inversa, la función ord(c) devuelve el código del
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+adgadfgdafgad
+Definir una función mi_grep(cadena,fichero) similar al comando grep de unix
