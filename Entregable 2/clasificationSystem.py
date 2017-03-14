@@ -32,12 +32,13 @@ def cross_validation_(clasificator, data_x,data_y, k = 5):
     predicted = cross_val_predict(model, data_x, data_y, cv=kfold)
 
     print("Número de muestras: " + str(len(data_x)))
-    print("Valoraciones:", values)
-    print("Media:", np.mean(values))
-    print("Error:", scipy.stats.sem(values))
-    print("Precision:",metrics.accuracy_score(data_y, predicted))
-    print("Matriz de confusión:", metrics.confusion_matrix(data_y, predicted))
-    print("Resumen:", metrics.classification_report(data_y, predicted))
+    print("Valoraciones Obtenidas:", values)
+    print("Media Valoraciones Obtenidas:", np.mean(values))
+    print("Error Valoraciones Obtenidas:", scipy.stats.sem(values))
+    print("Exactitud Real vs Estimado:",metrics.accuracy_score(data_y, predicted))
+    print("Matriz de confusión:\n", metrics.confusion_matrix(data_y, predicted))
+    print("Resumen:\n", metrics.classification_report(data_y, predicted))
+
     #representacion_grafica(data_x, data_y, target_names, y_names)
 
 def representacion_grafica(x_data, y_data,x_name, y_name,x_limit =7, y_limit = 7):

@@ -23,10 +23,9 @@ print("-------------------------------------------------------------------------
 print("Parámetros Ajustados: ")
 print("Datos del Clasificador: \n" + str((clasificador3)))
 print("----------------------------------------------------------------------------------------------------------------")
-print("----------------------------------------------------------------------------------------------------------------")
 print("Regresión Logística - Predicción crosstab")
 print("----------------------------------------------------------------------------------------------------------------")
-print("Score: {}".format(clasificador3.score(instancia, y_train)))
+#print("Valoración: {}".format(clasificador3.score(instancia, y_train)))
 clasificationSystem.cross_validation_(clasificador3, X_train,y_train,10)
 
 #Anexo
