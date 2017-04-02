@@ -85,11 +85,16 @@
 # clasificación que se piden deben ser subclases de esta clase genérica. 
 
 # NO MODIFICAR ESTA CLASE.
-
+#import warnings
 import numpy as np
 from sklearn.naive_bayes import GaussianNB
 from sklearn import datasets
 from sklearn.naive_bayes import MultinomialNB
+import math
+import votes
+import copy
+
+#warnings.filterwarnings("ignore")
 
 class MetodoClasificacion:
     """
@@ -108,11 +113,10 @@ class MetodoClasificacion:
         * valores_atributos: diccionario que a cada atributo le asigna la
                              lista de sus posibles valores 
         """
-
-        self.atributo_clasificacion=atributo_clasificacion
+        self.atributo_clasificacion = atributo_clasificacion
         self.clases = clases
-        self.atributos=atributos
-        self.valores_atributos=valores_atributos
+        self.atributos = atributos
+        self.valores_atributos = valores_atributos
 
 
     def entrena(self,entr,clas_entr,valid,clas_valid,autoajuste):
@@ -133,7 +137,7 @@ class MetodoClasificacion:
         * autoajuste: booleano para indicar si se hace autoajuste
         
         """
-        abstract
+        pass
 
     def clasifica(self, ejemplo):
         """
@@ -144,7 +148,7 @@ class MetodoClasificacion:
         clasificador, debe devolver un excepción ClasificadorNoEntrenado
         (introducida más abajo) 
         """
-        abstract
+        pass
 
 # Excepción que ha de devolverse si se llama al método de clasificación antes de
 # ser entrenado  
@@ -156,16 +160,14 @@ class ClasificadorNoEntrenado(Exception): pass
 # ----------------------------------------------------------------------------
 # Naive Bayes
 # ----------------------------------------------------------------------------
-
+0
 # Implementar los métodos Naive Bayes de entrenamiento (con ajuste) y
 # clasificación
 
 
-# LEER LOS COMENTARIOS AL CÓDIGO
-
 class ClasificadorNaiveBayes(MetodoClasificacion):
 
-    def __init__(self,atributo_clasificacion,clases,atributos,valores_atributos,k=1):
+    def __init__(self, atributo_clasificacion, clases, atributos, valores_atributos,k=1):
 
         """ 
         Los argumentos de entrada al constructor son los mismos que los de la
@@ -174,11 +176,49 @@ class ClasificadorNaiveBayes(MetodoClasificacion):
         siempre que en el entrenamiento no se haga autoajuste (en ese caso, se
         tomará como "k" la que se decida en autoajuste).
         """
+        super().__init__(atributo_clasificacion,clases,atributos,valores_atributos)
+        self.k = float(k)
+        self.P_vj_ai = {}
+        self.P_vj = {}
+        self.test_class = None
 
-        # *********** COMPLETA EL CÓDIGO **************
-        MetodoClasificacion.__init__(self,atributo_clasificacion,clases,atributos,valores_atributos)
-        self.k = k
-        
+    #Realiza las predicciones en base a los datos de entenamiento
+    def SimpleNB(self, ejemplo):
+        listPredicciones = []
+        for row in range(len(ejemplo)):
+            best_prob = None
+            prediccion = None
+            # Accedemos a la tabla de probabilidades de cada caracteristica
+            for clas, atr in self.P_vj_ai.items():
+                operation = 0.0
+                # Comprobamos si el valor de la caracteristica existe y extraemos la probabilidad
+                for column in range(len(ejemplo[row])):
+                    if ejemplo[row][column] in self.valores_atributos[self.atributos[column]]:
+                        indexAtr = self.valores_atributos[self.atributos[column]].index(ejemplo[row][column])
+                        operation += atr[self.atributos[column]][indexAtr]
+                prob = self.P_vj[clas] + operation
+                if best_prob is None or prob > best_prob:
+                    best_prob = prob
+                    prediccion = clas
+            listPredicciones.append(prediccion)
+
+        return listPredicciones
+
+    # Devuelve la precision de las predicciones con respecto al test pasados en método entrena:
+    def getAccuracy(self, predictions):
+        testSet = self.test_class
+        correct = 0
+        if(len(testSet)<len(predictions)):
+            for i in range(len(testSet)):
+                if testSet[i] == testSet[i]:
+                    correct += 1
+        else:
+            for i in range(len(predictions)):
+                if testSet[i] == predictions[i]:
+                    correct += 1
+        return round((correct / float(len(testSet))) * 100.0,3)
+
+
     def entrena(self,entr,clas_entr,valid,clas_valid,autoajuste=True):
 
         """ 
@@ -193,8 +233,8 @@ class ClasificadorNaiveBayes(MetodoClasificacion):
         
         [0.001, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 20, 50, 100] 
 
-        Durante el ajuste, imprimir por pantalla los distintos rendimientos
         que se van obteniendo, y el "k" finalmente escogido 
+        Durante el ajuste, imprimir por pantalla los distintos rendimientos
 
         Si "autoajuste" es False, para el suavizado se tomará el "k" que se ha
         dado como argumento del constructor de la clase.
@@ -204,11 +244,71 @@ class ClasificadorNaiveBayes(MetodoClasificacion):
         desconocidos. En ese caso, simplemente ignorar esos valores (pero no
         ignorar el ejemplo).
         """
-
+        # suavizado laplace y logaritmo:
+        #Clasificación en base a clases
+        # Obtenemos en un diccionario todas las probabilidades asociadas a cada valor:
+        # dict_P_vj_ai = collections.Counter(arAux)
         # *********** COMPLETA EL CÓDIGO **************
+        # count occurrences of values per row (clase):
+        dict_P_vj = {}
+        for elem in range(len(clas_entr)):
+            if clas_entr[elem] in self.clases:
+                if clas_entr[elem] in dict_P_vj.keys():
+                    dict_P_vj[clas_entr[elem]] += 1.0
+                else:
+                    dict_P_vj[clas_entr[elem]] = 1.0
 
-    #
-    def clasifica(self,ejemplo):
+        counts = {}
+        #Inicializamos counts para realizar el conteo de los tipos de atributos por cada clase:
+        for clas in self.clases:
+            counts[clas] = {}
+            for atr in self.atributos:
+                votes = []
+                for pos in range(len(self.valores_atributos[atr])):
+                    votes.append(1)
+                counts[clas][atr] = votes
+        #Guardamos las ocurrencias de cada valor de cada tipo para cada atributo de cada clase:
+        for row in range(len(entr)):
+            for column in range(len(entr[row])):
+                atr = self.atributos[column]
+                voto = entr[row][column]
+                if voto in self.valores_atributos[atr]:
+                    indexAtr = self.valores_atributos[atr].index(voto)
+                    counts[clas_entr[row]][self.atributos[column]][indexAtr] += 1
+
+        #Si hay auto ajuste realizamos búsqueda de mejor k:
+        if(autoajuste == True):
+            self.k = autoAjuste(self.atributo_clasificacion, self.clases, self.atributos, self.valores_atributos,entr,clas_entr,valid,clas_valid)
+            print("\n----------------------------")
+            print("----- Mejor Valor de K -----")
+            print("----------------------------\n")
+
+        #Realizamos el cálculo de sus probabilidades aplicando logaritmo
+        for clas in counts.keys():
+            dicAux = counts[clas]
+            for vote in dicAux.keys():
+                list_aux = []
+                k = 0
+                for poss in range(len(self.valores_atributos[vote])):
+                    log_P_vj_aj = math.log((dicAux[vote][poss] + self.k) / (dict_P_vj[clas] + len(self.valores_atributos[vote]) * self.k))
+                    list_aux.append(log_P_vj_aj)
+                    k += 1
+                dict_prob_aux = {}
+                if clas in self.P_vj_ai:
+                    dict_prob_aux = self.P_vj_ai[clas]
+                dict_prob_aux.__setitem__(vote, list_aux)
+                self.P_vj_ai.__setitem__(clas, dict_prob_aux)
+
+
+
+        #Guardamos la probabilidad de cada clase aplicando logaritrmo:
+        for key in dict_P_vj.keys():
+            dict_P_vj[key] = math.log(dict_P_vj[key] / len(entr))
+
+        #Guargadmos los logaritmos de los conteos (con su suavizado k correspondiente) por clases en:
+        self.P_vj = dict_P_vj
+
+    def clasifica(self, ejemplo, clase):
 
         """ 
         Método para clasificación de ejemplos, usando el clasificador Naive
@@ -222,40 +322,131 @@ class ClasificadorNaiveBayes(MetodoClasificacion):
         desconocidos. En ese caso, simplimente ignorar esos valores (pero no
         ignorar el ejemplo).
         """
+        self.test_class = clase
+        if(self.P_vj_ai != {}):
+            clasificacion = None
+            #Usamos método SimpleNB:
+            clasificacion = self.SimpleNB(ejemplo)
+            print("Valor de k: ",self.k)
+            print("Precisión: "+str(self.getAccuracy(clasificacion)) +"%\n")
+        else:
+            raise ClasificadorNoEntrenado("No has entrenado el clasificador")
+        return clasificacion
 
+#Funciones útiles:
 
-        # *********** COMPLETA EL CÓDIGO **************
-        switcherExample = {
-            0: "Ejemplo 1: Clasificador Básico Naive Bayes--> Caso más sencillo con datos manuales",
-            1: "Ejemplo 2: Clasificador Básico Naive Bayes--> Caso Datos de Iris",
-            2: "Ejemplo 3: Clasificador Multnomial Naive Bayes --> Caso más sencillo con datos random",
-        }
-        if ejemplo in switcherExample:
-            if ejemplo == 0:
-                #Definimos los datos ejemplo:
-                X = np.array([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [3, 2]])
-                Y = np.array([1, 1, 1, 2, 2, 2])
-                # Definimos el clasificador Naive Bayes:
-                clf = GaussianNB()
-                clf.fit(X, Y)
-                GaussianNB(priors=None)
-                print(clf.predict([[-0.8, -1]]))
-                clf_pf = GaussianNB()
-                clf_pf.partial_fit(X, Y, np.unique(Y))
-                GaussianNB(priors=None)
-                print(clf_pf.predict([[-0.8, -1]]))
-            elif ejemplo == 1:
-                iris = datasets.load_iris()
-                gnb = GaussianNB()
-                y_pred = gnb.fit(iris.data, iris.target).predict(iris.data)
-                print("Number of mislabeled points out of a total %d points : %d" % (iris.data.shape[0], (iris.target != y_pred).sum()))
-            elif ejemplo == 2:
-                X = np.random.randint(5, size=(6, 100))
-                y = np.array([1, 2, 3, 4, 5, 6])
-                clf = MultinomialNB()
-                clf.fit(X, y)
-                MultinomialNB(alpha=1.0, class_prior=None, fit_prior=True)
-                print(clf.predict(X[2:3]))
+def autoAjuste(atributo_clasificacion, clases, atributos, valores_atributos, entr,clas_entr,valid,clas_valid):
+    print("\n----------------------------")
+    print("-------- Autoajuste --------")
+    print("----------------------------\n")
+    list_k = [0.001, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 20, 50, 100]
+    best_k = None
+    best_prec = None
+    for k in list_k:
+        p = ClasificadorNaiveBayes(atributo_clasificacion, clases, atributos, valores_atributos,k=k)
+        p.entrena(entr,clas_entr,valid,clas_valid,autoajuste=False)
+        precision = p.getAccuracy(p.clasifica(valid,clas_valid))
+        if(best_k is None or best_prec is None or best_prec<precision):
+            best_k = k
+            best_prec = precision
+    return best_k
 
+#Función que lee los atributos de los datos de un archivo:
+def readAtr(pathToFile):
+    res = []
+    max_count = 28
+    count = 0
+    with open(pathToFile) as row:
+        atr = []
+        for data in row:
+            if count == max_count:
+                c = atr[:]
+                count = 0
+                res.append(c)
+                del atr[:]
+            line = data.split("\n")
+            for char in line:
+                for val in char:
+                    if val == ' ':
+                        atr.append(0)
+                    elif val == '+' or val == '#':
+                        atr.append(1)
+            count += 1
+    return res
+
+#Función que lee los valores de los datos de un archivo:
+def readValues(pathToFile):
+    res = []
+    with open(pathToFile) as raw_data:
+        for item in raw_data:
+            res.append(item.split("\n")[0])
+    return res
+
+def otrosEjemplos(ejemplo):
+    switcherExample = {
+        0: "Ejemplo 1: Clasificador Gaussiano Naive Bayes--> Caso más sencillo con datos manuales",
+        1: "Ejemplo 2: Clasificador Gaussiano Naive Bayes--> Caso Datos de Iris",
+        2: "Ejemplo 3: Clasificador Multnomial Naive Bayes --> Caso más sencillo con datos random",
+    }
+    if ejemplo in switcherExample:
+        if ejemplo == 0:
+            # Definimos los datos ejemplo:
+            X = np.array([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [3, 2]])
+            Y = np.array([1, 1, 1, 2, 2, 2])
+            # Definimos el clasificador Naive Bayes:
+            clf = GaussianNB()
+            clf.fit(X, Y)
+            GaussianNB(priors=None)
+            print(clf.predict([[-0.8, -1]]))
+            clf_pf = GaussianNB()
+            clf_pf.partial_fit(X, Y, np.unique(Y))
+            GaussianNB(priors=None)
+            print(clf_pf.predict([[-0.8, -1]]))
+        elif ejemplo == 1:
+            iris = datasets.load_iris()
+            gnb = GaussianNB()
+            y_pred = gnb.fit(iris.data, iris.target).predict(iris.data)
+            print("Number of mislabeled points out of a total %d points : %d" % (
+            iris.data.shape[0], (iris.target != y_pred).sum()))
+        elif ejemplo == 2:
+            X = np.random.randint(5, size=(6, 100))
+            y = np.array([1, 2, 3, 4, 5, 6])
+            clf = MultinomialNB()
+            clf.fit(X, y)
+            MultinomialNB(alpha=1.0, class_prior=None, fit_prior=True)
+            print(clf.predict(X[2:3]))
 
 # ---------------------------------------------------------------------------
+
+
+#Ejemplo Votos:
+print("\n----------------------------------------------------------------------------------------------------------")
+print("-------------------------------------------- EJEMPLO VOTOS -----------------------------------------------")
+print("----------------------------------------------------------------------------------------------------------\n")
+p = ClasificadorNaiveBayes(votes.votos_atributo_clasificacion, votes.votos_clases,votes.votos_atributos,votes.votos_valores_atributos,k=0.01)
+#print(str(p._contents(p.valores_atributos)))
+#print(str(p._contents(p.valores_atributos,False)))
+p.entrena(votes.votos_entr,votes.votos_entr_clas,votes.votos_valid,votes.votos_valid_clas)
+print("Clasificación Predecida:\n"+str(p.clasifica(votes.votos_test,votes.votos_test_clas)))
+
+#Ejemplo Dígitos:
+print("\n----------------------------------------------------------------------------------------------------------")
+print("------------------------------------------- EJEMPLO DÍGITOS ----------------------------------------------")
+print("----------------------------------------------------------------------------------------------------------\n")
+digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+digitos_atributos = []
+digitos_valor_atributos = {}
+digitos_atributo_clasificacion = 'digitos'
+tam = 28
+for i in range(tam**2):
+    digitos_atributos.append('pixel' + str(i))
+    digitos_valor_atributos['pixel' + str(i)] = [0, 1]
+q = ClasificadorNaiveBayes(digitos_atributo_clasificacion,digits,digitos_atributos,digitos_valor_atributos)
+train_data = readAtr("digitdata/trainingimages")
+train_clas = readValues("digitdata/traininglabels")
+val_data = readAtr("digitdata/validationimages")
+val_clas = readValues("digitdata/validationlabels")
+test_data = readAtr("digitdata/testimages")
+test_clas = readValues("digitdata/testlabels")
+q.entrena(train_data, train_clas, val_data, val_clas, True)
+print("Clasificación Predecida:\n"+str(q.clasifica(test_data,test_clas)))

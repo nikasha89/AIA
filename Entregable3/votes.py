@@ -62,8 +62,6 @@ votos_atributos=['voto1',
 # ----------------------------------
 
 
-
-
 votos_valores_atributos={'voto1':['s','n'],
                        'voto2':['s','n'],
                        'voto3':['s','n'],
@@ -80,7 +78,6 @@ votos_valores_atributos={'voto1':['s','n'],
                        'voto14':['s','n'],
                        'voto15':['s','n'],
                        'voto16':['s','n']}
-
 
 
 # Ejemplos del conjunto de entrenamiento:
