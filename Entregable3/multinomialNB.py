@@ -17,9 +17,8 @@ def leeTweet(path):
         for row in input_file:
             row = row.split(',')
             id = str((row[2][1:-2]))
-            # Sólo se consideran los tweets con texto no vacío, lo cual denota, en función de load_json, que están en inglés
+            # Sólo se consideran los tweets con texto no vacío y en inglés
             if cargaJSON(id) != "":
-                # Para cada tweet se consideran su texto y su sentimiento
                 data.append(cargaJSON(id).lower())
                 classes.append((str(row[1][1:-1])))
     return data, classes
@@ -95,8 +94,8 @@ def cargaDatos(tipo=''):
         print("----- Positivos VS Resto -----")
         print("---------------------------------\n")
     elif tipo == '-VS+oVoid':
-        data = data[(classes == 'negative') | (classes == 'irrelevant') | (classes == 'positive')  | (classes == 'neutral')]
-        target = classes[(classes == 'negative') | (classes == 'irrelevant') | (classes == 'positive')| (classes == 'neutral')]
+        data = data[(classes == 'negative') | (classes == 'positive')  | (classes == 'neutral')]
+        target = classes[(classes == 'negative') | (classes == 'positive')| (classes == 'neutral')]
         print("\n--------------------------------")
         print("----- Negativos VS Resto -----")
         print("--------------------------------\n")
@@ -122,12 +121,14 @@ def main(tipo):
 
 
 #Ejemplo Tweet:
-#tipo == '+VS-'
-#tipo == '+o-VSvoid'
-#tipo == '-VS+oVoid'
-#tipo == '+VS-ovoid'
-
+#Descomentar el main correspondiente a cada caso para ejecutarlo:
+#Sentimientos -- Todos con todos:
+#main('')
+#Sentimientos -- + con -:
 #main('+VS-')
-main('+o-VSvoid')
-#main('-VS+oVoid')
+#Sentimientos -- Con sentimiento VS resto:
+#main('+o-VSvoid')
+#Sentimientos -- Negativos con resto:
+main('-VS+oVoid')
+#Sentimientos --  + con resto:
 #main('+VS-oVoid')
